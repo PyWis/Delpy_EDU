@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="quiz-header">
+        <h1>{{ title }}</h1>
+        <p>{{ questions|length }} domande &mdash; Seleziona una risposta per ogni domanda</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('quiz.submit_quiz', filename=filename) }}" id="quizForm">
+        {% for q in questions %}
+        <div class="question-card" id="question-{{ loop.index }}">
+            <div class="question-number">Domanda {{ loop.index }} di {{ questions|length }}</div>
+            <p class="question-text">{{ q.text }}</p>
+            <ul class="options-list">
+                {% for option in q.options %}
+                <li>
+                    <label class="option-label">
+                        <input type="radio" name="q_{{ q.index }}" value="{{ option.key }}" required>
+                        <span class="option-key">{{ option.key }}</span>
+                        <span class="option-text">{{ option.text }}</span>
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+
+        <div class="quiz-submit">
+            <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-outline">Annulla</a>
+            <button type="submit" class="btn btn-primary btn-lg"
+                    onclick="return checkAllAnswered({{ questions|length }})">
+                Consegna Quiz
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function checkAllAnswered(total) {
+    for (let i = 0; i < total; i++) {
+        const cards = document.querySelectorAll('.question-card');
+        const answered = document.querySelectorAll(`[name="q_${i}"]:checked`);
+        if (answered.length === 0) {
+            cards[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            cards[i].classList.add('question-unanswered');
+            setTimeout(() => cards[i].classList.remove('question-unanswered'), 2000);
+            return false;
+        }
+    }
+    return confirm('Confermi di voler consegnare il quiz?');
+}
+</script>
+{% endblock %}

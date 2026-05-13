@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Cronologia Quiz - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1>Cronologia Quiz</h1>
+            <p>Tutti i quiz completati da {{ current_user.username }}</p>
+        </div>
+        <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-primary">Nuovo Quiz</a>
+    </div>
+
+    {% if results %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Quiz</th>
+                    <th>Punteggio</th>
+                    <th>Percentuale</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ result.quiz_title }}</td>
+                    <td>{{ result.score }}/{{ result.total_questions }}</td>
+                    <td>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar
+                                {% if result.percentage >= 70 %}progress-good
+                                {% elif result.percentage >= 50 %}progress-medium
+                                {% else %}progress-bad{% endif %}"
+                                style="width: {{ result.percentage }}%">
+                            </div>
+                        </div>
+                        <span class="{% if result.percentage >= 70 %}text-good
+                                     {% elif result.percentage >= 50 %}text-medium
+                                     {% else %}text-bad{% endif %}">
+                            {{ result.percentage }}%
+                        </span>
+                    </td>
+                    <td>{{ result.completed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-card">
+        <div class="empty-icon">&#128203;</div>
+        <h3>Nessun quiz completato</h3>
+        <p>Inizia il tuo primo quiz per vedere i risultati qui.</p>
+        <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-primary">Vai ai Quiz</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

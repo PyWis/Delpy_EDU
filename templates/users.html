@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Gestione Utenti - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1>Utenti della Scuola</h1>
+            <p>{{ current_user.school.name }}</p>
+        </div>
+        <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">+ Nuovo Utente</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Ruolo</th>
+                    <th>Stato</th>
+                    <th>Creato il</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="{% if not user.is_active %}row-disabled{% endif %}">
+                    <td>{{ loop.index }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <span class="badge {% if user.role == 'admin' %}badge-admin{% else %}badge-student{% endif %}">
+                            {% if user.role == 'admin' %}Admin{% else %}Studente{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if user.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                            {% if user.is_active %}Attivo{% else %}Disabilitato{% endif %}
+                        </span>
+                    </td>
+                    <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                    <td class="table-actions">
+                        {% if user.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" style="display:inline">
+                            <button type="submit" class="btn btn-xs btn-outline">
+                                {% if user.is_active %}Disabilita{% else %}Abilita{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                              style="display:inline"
+                              onsubmit="return confirm('Eliminare definitivamente {{ user.username }}?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Elimina</button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted">(account corrente)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center empty-state">Nessun utente trovato.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

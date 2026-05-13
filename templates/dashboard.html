@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <h1>Benvenuto, {{ current_user.username }}!</h1>
+        <p class="school-info">
+            <strong>{{ current_user.school.name }}</strong>
+            &mdash;
+            {% if current_user.is_admin() %}Amministratore{% else %}Studente{% endif %}
+        </p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ quizzes|length }}</div>
+            <div class="stat-label">Quiz Disponibili</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ recent_results|length }}</div>
+            <div class="stat-label">Quiz Completati Recenti</div>
+        </div>
+        {% if current_user.is_admin() %}
+        <div class="stat-card">
+            <div class="stat-number">{{ school_users|length }}</div>
+            <div class="stat-label">Utenti della Scuola</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-grid">
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2>Quiz Disponibili</h2>
+                <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-sm btn-outline">Vedi tutti</a>
+            </div>
+            {% if quizzes %}
+            <ul class="quiz-list">
+                {% for quiz in quizzes[:5] %}
+                <li class="quiz-item">
+                    <span class="quiz-title">{{ quiz.title }}</span>
+                    <a href="{{ url_for('quiz.take_quiz', filename=quiz.filename) }}" class="btn btn-sm btn-primary">Inizia</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state">Nessun quiz disponibile. Aggiungi file CSV nella cartella <code>quiz/</code>.</p>
+            {% endif %}
+        </section>
+
+        <section class="dashboard-section">
+            <div class="section-header">
+                <h2>Risultati Recenti</h2>
+                <a href="{{ url_for('quiz.history') }}" class="btn btn-sm btn-outline">Cronologia</a>
+            </div>
+            {% if recent_results %}
+            <ul class="results-list">
+                {% for result in recent_results %}
+                <li class="result-item">
+                    <div class="result-info">
+                        <span class="result-title">{{ result.quiz_title }}</span>
+                        <span class="result-date">{{ result.completed_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                    <div class="result-score
+                        {% if result.percentage >= 70 %}score-good
+                        {% elif result.percentage >= 50 %}score-medium
+                        {% else %}score-bad{% endif %}">
+                        {{ result.score }}/{{ result.total_questions }}
+                        <small>({{ result.percentage }}%)</small>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state">Nessun quiz completato ancora. Inizia il tuo primo quiz!</p>
+            {% endif %}
+        </section>
+    </div>
+
+    {% if current_user.is_admin() %}
+    <section class="dashboard-section admin-section">
+        <div class="section-header">
+            <h2>Gestione Utenti</h2>
+            <a href="{{ url_for('admin.create_user') }}" class="btn btn-sm btn-primary">+ Nuovo Utente</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Ruolo</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in school_users %}
+                    <tr class="{% if not user.is_active %}row-disabled{% endif %}">
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="badge {% if user.role == 'admin' %}badge-admin{% else %}badge-student{% endif %}">
+                                {% if user.role == 'admin' %}Admin{% else %}Studente{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if user.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                                {% if user.is_active %}Attivo{% else %}Disabilitato{% endif %}
+                            </span>
+                        </td>
+                        <td class="table-actions">
+                            {% if user.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" style="display:inline">
+                                <button type="submit" class="btn btn-xs btn-outline">
+                                    {% if user.is_active %}Disabilita{% else %}Abilita{% endif %}
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                                  style="display:inline"
+                                  onsubmit="return confirm('Eliminare {{ user.username }}?')">
+                                <button type="submit" class="btn btn-xs btn-danger">Elimina</button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted">(tu)</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
