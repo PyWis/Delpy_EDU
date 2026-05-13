@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Accedi - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <div class="form-header">
+            <h2>Accedi a Delpy EDU</h2>
+            <p>Inserisci le tue credenziali per entrare nella piattaforma.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-control"
+                       placeholder="tua@email.it" required
+                       value="{{ request.form.get('email', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control"
+                       placeholder="La tua password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Accedi</button>
+        </form>
+
+        <p class="form-footer">
+            La tua scuola non è ancora registrata? <a href="{{ url_for('auth.register') }}">Registrati ora</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

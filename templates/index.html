@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Delpy EDU - Piattaforma Scolastica{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">Delpy EDU</h1>
+        <p class="hero-subtitle">La piattaforma di apprendimento per le scuole italiane</p>
+        <p class="hero-desc">Iscriviti con la tua scuola, gestisci gli utenti e avvia quiz interattivi per i tuoi studenti.</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">Registra la tua Scuola</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">Accedi</a>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">&#127979;</div>
+            <h3>Registrazione Scuola</h3>
+            <p>Registra la tua istituzione scolastica in pochi minuti con verifica email.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#128101;</div>
+            <h3>Gestione Utenti</h3>
+            <p>L'amministratore della scuola può creare e gestire profili per studenti e docenti.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#128203;</div>
+            <h3>Quiz Interattivi</h3>
+            <p>Carica quiz in formato CSV e i tuoi studenti potranno svolgerli online con risultati immediati.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
