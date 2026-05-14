@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{% if school %}Modifica Scuola{% else %}Nuova Scuola{% endif %} - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <div class="form-header">
+            <h2>{% if school %}Modifica Scuola{% else %}Nuova Scuola{% endif %}</h2>
+            <p>
+                {% if school %}
+                    Aggiorna i dati della scuola <strong>{{ school.name }}</strong>.
+                {% else %}
+                    Crea una nuova scuola e il suo primo utente amministratore.
+                {% endif %}
+            </p>
+        </div>
+
+        <form method="POST" novalidate>
+            <div class="form-group">
+                <label for="name">Nome Scuola</label>
+                <input type="text" id="name" name="name" class="form-control"
+                       placeholder="es. Istituto Comprensivo Roma Nord" required
+                       value="{{ school.name if school else request.form.get('name', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email{% if not school %} (usata anche per l'utente admin){% endif %}</label>
+                <input type="email" id="email" name="email" class="form-control"
+                       placeholder="admin@scuola.it" required
+                       value="{{ school.email if school else request.form.get('email', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    {% if school %}Nuova Password <small class="form-hint">(lascia vuoto per non cambiare)</small>{% else %}Password{% endif %}
+                </label>
+                <input type="password" id="password" name="password" class="form-control"
+                       placeholder="Minimo 8 caratteri"
+                       {% if not school %}required{% endif %}>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="is_verified" value="1"
+                           {% if school and school.is_verified %}checked{% endif %}
+                           {% if not school %}checked{% endif %}>
+                    Scuola verificata
+                </label>
+                <small class="form-hint">Le scuole non verificate non possono accedere alla piattaforma.</small>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ url_for('superadmin.schools') }}" class="btn btn-outline">Annulla</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if school %}Salva Modifiche{% else %}Crea Scuola{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
