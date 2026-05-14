@@ -169,6 +169,44 @@ def _prompt_create_superadmin(app):
         print(f"\n  Superadmin '{username}' creato. Buon lavoro!\n")
 
 
+def _bootstrap_demo_admin(app):
+    """Crea il superadmin demo (admin/admin) se non esiste già. Usato con --run."""
+    from models import User
+
+    DEMO_EMAIL = "admin@demo.local"
+    DEMO_PASSWORD = "admin"
+    DEMO_USERNAME = "admin"
+
+    db_url = app.config["SQLALCHEMY_DATABASE_URI"]
+    if db_url.startswith("sqlite:///"):
+        db_file = db_url[len("sqlite:///"):]
+        if not os.path.isabs(db_file):
+            db_file = os.path.join(app.root_path, db_file)
+        if os.path.exists(db_file):
+            _migrate_school_id_nullable(db_file)
+
+    with app.app_context():
+        db.create_all()
+        existing = User.query.filter_by(email=DEMO_EMAIL).first()
+        if existing:
+            print(f"\n  [DEMO] Superadmin '{DEMO_USERNAME}' già presente — nessuna modifica.")
+            return
+
+        user = User(school_id=None, username=DEMO_USERNAME, email=DEMO_EMAIL, role="superadmin")
+        user.set_password(DEMO_PASSWORD)
+        db.session.add(user)
+        db.session.commit()
+
+    print("\n" + "=" * 55)
+    print("  MODALITÀ DEMO — credenziali superadmin create")
+    print("=" * 55)
+    print(f"  Username : {DEMO_USERNAME}")
+    print(f"  Email    : {DEMO_EMAIL}")
+    print(f"  Password : {DEMO_PASSWORD}")
+    print("=" * 55)
+    print("  NON usare queste credenziali in produzione!\n")
+
+
 if __name__ == "__main__":
     import sys
 
@@ -184,6 +222,12 @@ if __name__ == "__main__":
             db.drop_all()
             db.create_all()
         print("Reset completato. Il database è stato ripristinato allo stato iniziale.")
+        sys.exit(0)
+
+    if "--run" in sys.argv:
+        # Modalità demo: crea il superadmin admin/admin e avvia il server
+        _bootstrap_demo_admin(app)
+        app.run(debug=False, host="0.0.0.0", port=5000)
         sys.exit(0)
 
     _prompt_create_superadmin(app)
