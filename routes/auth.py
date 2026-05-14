@@ -152,13 +152,12 @@ def dashboard():
     if current_user.is_superadmin():
         return redirect(url_for("superadmin.schools"))
 
-    from quiz_loader import get_quiz_list
-    from models import QuizResult
-    quizzes = get_quiz_list()
-    recent_results = (
-        QuizResult.query
-        .filter_by(user_id=current_user.id)
-        .order_by(QuizResult.completed_at.desc())
+    from models import Quiz, QuizAttempt
+    quizzes = Quiz.query.filter_by(is_active=True).order_by(Quiz.created_at.desc()).limit(5).all()
+    recent_attempts = (
+        QuizAttempt.query
+        .filter_by(user_id=current_user.id, is_complete=True)
+        .order_by(QuizAttempt.completed_at.desc())
         .limit(5)
         .all()
     )
@@ -168,6 +167,6 @@ def dashboard():
     return render_template(
         "dashboard.html",
         quizzes=quizzes,
-        recent_results=recent_results,
+        recent_attempts=recent_attempts,
         school_users=school_users,
     )

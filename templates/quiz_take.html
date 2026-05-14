@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Delpy EDU{% endblock %}
+
+{% block content %}
+<!-- Sticky timer bar -->
+<div class="timer-bar" id="timer-bar">
+    <div class="timer-bar-inner">
+        <div class="timer-info">
+            <span class="timer-title">{{ quiz.title }}</span>
+            <span class="timer-clock" id="timer-clock">--:--</span>
+        </div>
+        <div class="timer-progress-track">
+            <div class="timer-progress-fill" id="timer-fill"></div>
+        </div>
+        <div class="timer-actions">
+            <span class="answer-counter" id="answer-counter">0 / {{ quiz.questions|length }}</span>
+            <button type="button" class="btn btn-sm btn-outline" id="btn-review">
+                Rivedi risposte
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Quiz form -->
+<form id="quiz-form" method="POST"
+      action="{{ url_for('quiz.submit_quiz', quiz_id=quiz.id, attempt_id=attempt.id) }}"
+      novalidate>
+
+    <!-- Questions panel -->
+    <div id="questions-panel" class="quiz-questions-panel">
+        {% for question in quiz.questions %}
+        <div class="question-card" id="qcard-{{ question.id }}" data-qid="{{ question.id }}">
+            <div class="question-number">{{ loop.index }} / {{ quiz.questions|length }}</div>
+            <p class="question-text">{{ question.text }}</p>
+            <div class="question-meta">
+                <span class="score-badge score-correct">+{{ question.correct_score }} corretta</span>
+                {% if question.wrong_score != 0 %}
+                <span class="score-badge score-wrong">{{ question.wrong_score }} sbagliata</span>
+                {% else %}
+                <span class="score-badge score-neutral">0 sbagliata</span>
+                {% endif %}
+            </div>
+            <div class="answers-list">
+                {% for answer in question.answers %}
+                <label class="answer-option" id="label-{{ question.id }}-{{ answer.id }}">
+                    <input type="radio" name="q{{ question.id }}" value="{{ answer.id }}"
+                           onchange="onAnswerChange({{ question.id }})">
+                    <span class="answer-text">{{ answer.text }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn-skip" onclick="skipQuestion({{ question.id }})">
+                Salta →
+            </button>
+        </div>
+        {% endfor %}
+
+        <div class="quiz-submit-area">
+            <button type="button" class="btn btn-primary btn-lg" id="btn-go-review">
+                Rivedi e invia →
+            </button>
+        </div>
+    </div>
+
+    <!-- Review panel (hidden by default) -->
+    <div id="review-panel" class="review-panel" style="display:none">
+        <div class="review-header">
+            <h2>Rivedi le risposte</h2>
+            <p>Clicca su una domanda saltata per tornarci e rispondere.</p>
+        </div>
+        <ul id="review-list" class="review-list"></ul>
+        <div class="review-actions">
+            <button type="button" class="btn btn-outline" id="btn-back-to-quiz">
+                ← Torna alle domande
+            </button>
+            <button type="submit" class="btn btn-primary btn-lg" id="btn-final-submit">
+                Invia Quiz definitivamente
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Time expired overlay -->
+<div id="time-expired-overlay" class="time-overlay" style="display:none">
+    <div class="time-overlay-box">
+        <h2>⏰ Tempo scaduto!</h2>
+        <p>Il quiz viene inviato automaticamente con le risposte date finora.</p>
+        <div class="spinner"></div>
+    </div>
+</div>
+
+<script>
+const STARTED_MS   = {{ started_ms }};
+const TIME_LIMIT_S = {{ time_limit_s }};
+const TOTAL_Q      = {{ quiz.questions|length }};
+const questionIds  = [{% for q in quiz.questions %}{{ q.id }}{% if not loop.last %},{% endif %}{% endfor %}];
+const QUIZ_ID      = {{ quiz.id }};
+const ATTEMPT_ID   = {{ attempt.id }};
+
+// ── Timer ────────────────────────────────────────────────────────────────────
+
+function updateTimer() {
+    const elapsed = (Date.now() - STARTED_MS) / 1000;
+    const remaining = Math.max(0, TIME_LIMIT_S - elapsed);
+    const pct = (remaining / TIME_LIMIT_S) * 100;
+
+    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+    const s = Math.floor(remaining % 60).toString().padStart(2, '0');
+    document.getElementById('timer-clock').textContent = m + ':' + s;
+
+    const fill = document.getElementById('timer-fill');
+    fill.style.width = pct + '%';
+    fill.className = 'timer-progress-fill' +
+        (pct < 15 ? ' danger' : pct < 35 ? ' warning' : '');
+
+    if (remaining <= 0) {
+        clearInterval(timerInterval);
+        autoSubmit();
+    }
+}
+
+const timerInterval = setInterval(updateTimer, 500);
+updateTimer();
+
+function autoSubmit() {
+    document.getElementById('time-expired-overlay').style.display = 'flex';
+    setTimeout(() => document.getElementById('quiz-form').submit(), 1500);
+}
+
+// ── Answer tracking ──────────────────────────────────────────────────────────
+
+function countAnswered() {
+    return questionIds.filter(id => !!document.querySelector(`input[name="q${id}"]:checked`)).length;
+}
+
+function updateCounter() {
+    document.getElementById('answer-counter').textContent = countAnswered() + ' / ' + TOTAL_Q;
+}
+
+function onAnswerChange(qid) {
+    const card = document.getElementById(`qcard-${qid}`);
+    card.classList.add('answered');
+    card.classList.remove('highlighted');
+    updateCounter();
+}
+
+function skipQuestion(qid) {
+    const cards = document.querySelectorAll('.question-card');
+    let idx = Array.from(cards).findIndex(c => c.dataset.qid == qid);
+    // Scroll to next unanswered or to submit area
+    let next = null;
+    for (let i = idx + 1; i < cards.length; i++) {
+        const nid = cards[i].dataset.qid;
+        if (!document.querySelector(`input[name="q${nid}"]:checked`)) {
+            next = cards[i];
+            break;
+        }
+    }
+    if (next) {
+        next.scrollIntoView({behavior: 'smooth', block: 'center'});
+    } else {
+        document.querySelector('.quiz-submit-area').scrollIntoView({behavior: 'smooth'});
+    }
+}
+
+// ── Review ───────────────────────────────────────────────────────────────────
+
+function buildReview() {
+    const list = document.getElementById('review-list');
+    list.innerHTML = '';
+    questionIds.forEach((qid, idx) => {
+        const card = document.getElementById(`qcard-${qid}`);
+        const qText = card.querySelector('.question-text').textContent.trim();
+        const checked = document.querySelector(`input[name="q${qid}"]:checked`);
+        const li = document.createElement('li');
+        li.className = 'review-item ' + (checked ? 'review-answered' : 'review-skipped');
+
+        const numSpan = `<span class="review-num">${idx + 1}</span>`;
+        if (checked) {
+            const aText = checked.closest('label').querySelector('.answer-text').textContent.trim();
+            li.innerHTML = `${numSpan}<div><div class="review-q">${qText}</div>
+                <div class="review-a">✓ ${aText}</div></div>`;
+        } else {
+            li.innerHTML = `${numSpan}<div><div class="review-q">${qText}</div>
+                <div class="review-a skipped-label">Non risposto — clicca per rispondere</div></div>`;
+            li.style.cursor = 'pointer';
+            li.addEventListener('click', () => {
+                showQuestions();
+                setTimeout(() => {
+                    card.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    card.classList.add('highlighted');
+                    setTimeout(() => card.classList.remove('highlighted'), 2000);
+                }, 100);
+            });
+        }
+        list.appendChild(li);
+    });
+}
+
+function showReview() {
+    buildReview();
+    document.getElementById('questions-panel').style.display = 'none';
+    document.getElementById('review-panel').style.display = 'block';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function showQuestions() {
+    document.getElementById('review-panel').style.display = 'none';
+    document.getElementById('questions-panel').style.display = 'block';
+}
+
+document.getElementById('btn-review').addEventListener('click', showReview);
+document.getElementById('btn-go-review').addEventListener('click', showReview);
+document.getElementById('btn-back-to-quiz').addEventListener('click', showQuestions);
+
+// ── Warn on unload ────────────────────────────────────────────────────────────
+window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = '';
+});
+document.getElementById('quiz-form').addEventListener('submit', function() {
+    window.removeEventListener('beforeunload', () => {});
+});
+</script>
+{% endblock %}

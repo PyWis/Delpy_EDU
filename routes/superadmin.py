@@ -1,10 +1,11 @@
+import json
 from functools import wraps
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
 from app import db
-from models import School, User
+from models import School, User, Quiz, Question, Answer
 
 superadmin_bp = Blueprint("superadmin", __name__)
 
@@ -263,3 +264,173 @@ def delete_user(school_id, user_id):
     db.session.commit()
     flash(f"Utente '{name}' eliminato.", "success")
     return redirect(url_for("superadmin.school_users", school_id=school_id))
+
+
+# ── QUIZ ──────────────────────────────────────────────────────────────────────
+
+@superadmin_bp.route("/quizzes")
+@login_required
+@superadmin_required
+def quiz_list():
+    quizzes = Quiz.query.order_by(Quiz.created_at.desc()).all()
+    return render_template("superadmin/quizzes.html", quizzes=quizzes)
+
+
+def _save_quiz_from_json(quiz, data):
+    """Persist questions and answers from the JSON payload onto quiz."""
+    for q in quiz.questions:
+        db.session.delete(q)
+    db.session.flush()
+
+    for idx, qdata in enumerate(data.get("questions", [])):
+        q = Question(
+            quiz_id=quiz.id,
+            text=qdata["text"].strip(),
+            order=idx,
+            correct_score=int(qdata.get("correct_score", 1)),
+            wrong_score=int(qdata.get("wrong_score", 0)),
+        )
+        db.session.add(q)
+        db.session.flush()
+        for adata in qdata.get("answers", []):
+            a = Answer(
+                question_id=q.id,
+                text=adata["text"].strip(),
+                is_correct=bool(adata.get("is_correct", False)),
+            )
+            db.session.add(a)
+
+
+@superadmin_bp.route("/quizzes/create", methods=["GET", "POST"])
+@login_required
+@superadmin_required
+def create_quiz():
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        time_limit = request.form.get("time_limit", "").strip()
+        quiz_data_raw = request.form.get("quiz_data", "")
+
+        if not title or not time_limit:
+            flash("Titolo e tempo massimo sono obbligatori.", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=None, quiz_json=None)
+
+        try:
+            time_limit = int(time_limit)
+            if time_limit < 1:
+                raise ValueError
+        except ValueError:
+            flash("Il tempo massimo deve essere un numero intero positivo (in minuti).", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=None, quiz_json=None)
+
+        try:
+            data = json.loads(quiz_data_raw)
+        except (json.JSONDecodeError, TypeError):
+            flash("Dati del quiz non validi. Riprova.", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=None, quiz_json=None)
+
+        if not data.get("questions"):
+            flash("Il quiz deve contenere almeno una domanda.", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=None, quiz_json=None)
+
+        quiz = Quiz(title=title, description=description or None, time_limit=time_limit)
+        db.session.add(quiz)
+        db.session.flush()
+        _save_quiz_from_json(quiz, data)
+        db.session.commit()
+
+        flash(f"Quiz '{title}' creato con {len(data['questions'])} domande.", "success")
+        return redirect(url_for("superadmin.quiz_list"))
+
+    return render_template("superadmin/quiz_form.html", quiz=None, quiz_json=None)
+
+
+@superadmin_bp.route("/quizzes/<int:quiz_id>/edit", methods=["GET", "POST"])
+@login_required
+@superadmin_required
+def edit_quiz(quiz_id):
+    quiz = db.get_or_404(Quiz, quiz_id)
+
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        description = request.form.get("description", "").strip()
+        time_limit = request.form.get("time_limit", "").strip()
+        quiz_data_raw = request.form.get("quiz_data", "")
+
+        if not title or not time_limit:
+            flash("Titolo e tempo massimo sono obbligatori.", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=quiz,
+                                   quiz_json=_quiz_to_json(quiz))
+
+        try:
+            time_limit = int(time_limit)
+            if time_limit < 1:
+                raise ValueError
+        except ValueError:
+            flash("Il tempo massimo deve essere un numero intero positivo.", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=quiz,
+                                   quiz_json=_quiz_to_json(quiz))
+
+        try:
+            data = json.loads(quiz_data_raw)
+        except (json.JSONDecodeError, TypeError):
+            flash("Dati del quiz non validi. Riprova.", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=quiz,
+                                   quiz_json=_quiz_to_json(quiz))
+
+        if not data.get("questions"):
+            flash("Il quiz deve contenere almeno una domanda.", "danger")
+            return render_template("superadmin/quiz_form.html", quiz=quiz,
+                                   quiz_json=_quiz_to_json(quiz))
+
+        quiz.title = title
+        quiz.description = description or None
+        quiz.time_limit = time_limit
+        _save_quiz_from_json(quiz, data)
+        db.session.commit()
+
+        flash(f"Quiz '{title}' aggiornato.", "success")
+        return redirect(url_for("superadmin.quiz_list"))
+
+    return render_template("superadmin/quiz_form.html", quiz=quiz, quiz_json=_quiz_to_json(quiz))
+
+
+def _quiz_to_json(quiz):
+    return json.dumps({
+        "questions": [
+            {
+                "text": q.text,
+                "correct_score": q.correct_score,
+                "wrong_score": q.wrong_score,
+                "answers": [
+                    {"text": a.text, "is_correct": a.is_correct}
+                    for a in q.answers
+                ],
+            }
+            for q in quiz.questions
+        ]
+    })
+
+
+@superadmin_bp.route("/quizzes/<int:quiz_id>/toggle", methods=["POST"])
+@login_required
+@superadmin_required
+def toggle_quiz(quiz_id):
+    quiz = db.get_or_404(Quiz, quiz_id)
+    quiz.is_active = not quiz.is_active
+    db.session.commit()
+    status = "attivato" if quiz.is_active else "disattivato"
+    flash(f"Quiz '{quiz.title}' {status}.", "success")
+    return redirect(url_for("superadmin.quiz_list"))
+
+
+@superadmin_bp.route("/quizzes/<int:quiz_id>/delete", methods=["POST"])
+@login_required
+@superadmin_required
+def delete_quiz(quiz_id):
+    quiz = db.get_or_404(Quiz, quiz_id)
+    title = quiz.title
+    db.session.delete(quiz)
+    db.session.commit()
+    flash(f"Quiz '{title}' eliminato.", "success")
+    return redirect(url_for("superadmin.quiz_list"))

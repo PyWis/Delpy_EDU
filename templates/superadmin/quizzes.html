@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Gestione Quiz - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1>Gestione Quiz</h1>
+            <p>{{ quizzes|length }} quiz total{{ 'e' if quizzes|length == 1 else 'i' }}</p>
+        </div>
+        <a href="{{ url_for('superadmin.create_quiz') }}" class="btn btn-primary">+ Nuovo Quiz</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Titolo</th>
+                    <th>Domande</th>
+                    <th>Tempo</th>
+                    <th>Stato</th>
+                    <th>Creato il</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for quiz in quizzes %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ quiz.title }}</strong>{% if quiz.description %}<br><small class="text-muted">{{ quiz.description[:80] }}{% if quiz.description|length > 80 %}…{% endif %}</small>{% endif %}</td>
+                    <td>{{ quiz.questions|length }}</td>
+                    <td>{{ quiz.time_limit }} min</td>
+                    <td>
+                        <span class="badge {% if quiz.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                            {% if quiz.is_active %}Attivo{% else %}Disattivato{% endif %}
+                        </span>
+                    </td>
+                    <td>{{ quiz.created_at.strftime('%d/%m/%Y') }}</td>
+                    <td class="table-actions">
+                        <a href="{{ url_for('superadmin.edit_quiz', quiz_id=quiz.id) }}" class="btn btn-xs btn-outline">Modifica</a>
+                        <form method="POST" action="{{ url_for('superadmin.toggle_quiz', quiz_id=quiz.id) }}" style="display:inline">
+                            <button type="submit" class="btn btn-xs btn-outline">
+                                {% if quiz.is_active %}Disattiva{% else %}Attiva{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('superadmin.delete_quiz', quiz_id=quiz.id) }}"
+                              style="display:inline"
+                              onsubmit="return confirm('Eliminare il quiz \'{{ quiz.title }}\' e tutti i risultati?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Elimina</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center empty-state">Nessun quiz creato. <a href="{{ url_for('superadmin.create_quiz') }}">Crea il primo quiz</a>.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

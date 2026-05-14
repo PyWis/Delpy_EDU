@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width:640px">
+    <div class="form-card">
+        <h1 style="font-size:1.5rem; margin-bottom:8px">{{ quiz.title }}</h1>
+        {% if quiz.description %}
+        <p style="color:var(--gray-600); margin-bottom:20px">{{ quiz.description }}</p>
+        {% endif %}
+
+        <div class="stats-grid" style="margin-bottom:24px">
+            <div class="stat-card">
+                <div class="stat-number">{{ quiz.questions|length }}</div>
+                <div class="stat-label">Domande</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ quiz.time_limit }}'</div>
+                <div class="stat-label">Tempo massimo</div>
+            </div>
+            {% if best %}
+            <div class="stat-card">
+                <div class="stat-number">{{ best.display_score }}</div>
+                <div class="stat-label">Tuo miglior voto</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="quiz-rules">
+            <h3>Regole</h3>
+            <ul>
+                <li>Puoi saltare qualsiasi domanda e tornarci prima di inviare.</li>
+                <li>Prima di inviare puoi rivedere tutte le risposte.</li>
+                <li>Il timer parte subito: una volta iniziato non si ferma.</li>
+                <li>Alla scadenza il quiz viene inviato automaticamente.</li>
+                <li>Punteggio minimo: <strong>3</strong>. Tutte corrette entro il 75% del tempo: <strong>10+</strong>.</li>
+            </ul>
+        </div>
+
+        <div class="form-actions" style="margin-top:24px">
+            <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-outline">Torna all'elenco</a>
+            <form method="POST" action="{{ url_for('quiz.start_quiz', quiz_id=quiz.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-primary">Inizia Quiz ▶</button>
+            </form>
+        </div>
+
+        {% if best %}
+        <p style="margin-top:16px; text-align:center">
+            <a href="{{ url_for('quiz.leaderboard', quiz_id=quiz.id) }}">Vedi la classifica →</a>
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
