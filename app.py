@@ -118,6 +118,51 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
+def _prompt_create_superadmin(app):
+    """Se non esiste nessun superadmin, guida l'utente a crearne uno."""
+    import getpass
+    from models import User
+
+    with app.app_context():
+        if User.query.filter_by(role="superadmin").first():
+            return  # già presente, nulla da fare
+
+        print("\n" + "=" * 55)
+        print("  Nessun superadmin trovato. Creane uno per iniziare.")
+        print("=" * 55)
+
+        while True:
+            email = input("  Email superadmin : ").strip().lower()
+            if email:
+                break
+            print("  L'email non può essere vuota.")
+
+        if User.query.filter_by(email=email).first():
+            print(f"  Email '{email}' già in uso. Avvio senza creare superadmin.")
+            return
+
+        while True:
+            password = getpass.getpass("  Password         : ")
+            if len(password) >= 8:
+                break
+            print("  La password deve essere di almeno 8 caratteri.")
+
+        confirm = getpass.getpass("  Conferma password: ")
+        if password != confirm:
+            print("  Le password non coincidono. Avvio senza creare superadmin.")
+            return
+
+        username = input("  Nome utente [Superadmin]: ").strip() or "Superadmin"
+
+        with app.app_context():
+            user = User(school_id=None, username=username, email=email, role="superadmin")
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+
+        print(f"\n  Superadmin '{username}' creato. Buon lavoro!\n")
+
+
 if __name__ == "__main__":
     import sys
 
@@ -135,4 +180,5 @@ if __name__ == "__main__":
         print("Reset completato. Il database è stato ripristinato allo stato iniziale.")
         sys.exit(0)
 
+    _prompt_create_superadmin(app)
     app.run(debug=True)
