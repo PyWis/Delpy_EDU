@@ -119,5 +119,20 @@ def load_user(user_id):
 
 
 if __name__ == "__main__":
+    import sys
+
     app = create_app()
+
+    if "--reset" in sys.argv:
+        print("ATTENZIONE: questa operazione elimina tutti i dati (scuole, utenti, risultati).")
+        confirm = input("Digita RESET per confermare: ").strip()
+        if confirm != "RESET":
+            print("Operazione annullata.")
+            sys.exit(0)
+        with app.app_context():
+            db.drop_all()
+            db.create_all()
+        print("Reset completato. Il database è stato ripristinato allo stato iniziale.")
+        sys.exit(0)
+
     app.run(debug=True)
