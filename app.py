@@ -1,3 +1,9 @@
+import sys
+# When run as `python app.py`, register this module as 'app' in sys.modules so
+# that `from app import db` in models/routes gets the same db instance.
+if __name__ == '__main__' and 'app' not in sys.modules:
+    sys.modules['app'] = sys.modules['__main__']
+
 import os
 import click
 from flask import Flask
