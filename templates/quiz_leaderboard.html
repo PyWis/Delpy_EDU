@@ -88,7 +88,7 @@
     <div id="tab-schools" class="tab-panel" style="display:none">
         <h2 class="section-title">Classifica scuole
             <small style="font-size:.8rem; font-weight:400; color:var(--gray-600)">
-                media dei 10 punteggi più alti
+                somma dei 10 punteggi più alti &mdash; max 100 (100+ se superato)
             </small>
         </h2>
         {% if school_leaderboard %}
@@ -107,7 +107,7 @@
                             {% else %}{{ loop.index }}{% endif %}
                         </td>
                         <td>{{ entry.school.name }}</td>
-                        <td><span class="score-pill {% if entry.score > 10 %}score-perfect{% elif entry.score >= 7 %}score-good{% elif entry.score >= 5 %}score-medium{% else %}score-low{% endif %}">{{ entry.display }}</span></td>
+                        <td><span class="score-pill {% if entry.score > 100 %}score-perfect{% elif entry.score >= 70 %}score-good{% elif entry.score >= 50 %}score-medium{% else %}score-low{% endif %}">{{ entry.display }}</span></td>
                         <td>{{ entry.participants }}</td>
                     </tr>
                     {% endfor %}
