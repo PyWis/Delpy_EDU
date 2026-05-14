@@ -32,11 +32,11 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    school_id = db.Column(db.Integer, db.ForeignKey("schools.id"), nullable=False)
+    school_id = db.Column(db.Integer, db.ForeignKey("schools.id"), nullable=True)
     username = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), default="student")  # "admin" or "student"
+    role = db.Column(db.String(20), default="student")  # "superadmin", "admin" or "student"
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -50,6 +50,9 @@ class User(UserMixin, db.Model):
 
     def is_admin(self):
         return self.role == "admin"
+
+    def is_superadmin(self):
+        return self.role == "superadmin"
 
     def __repr__(self):
         return f"<User {self.username}>"

@@ -339,6 +339,7 @@ select.form-control { cursor: pointer; }
     letter-spacing: .4px;
 }
 
+.badge-superadmin { background: #ffd6e0; color: #c62828; }
 .badge-admin   { background: #e8d5fd; color: #6200ea; }
 .badge-student { background: var(--primary-light); color: var(--primary); }
 .badge-active  { background: var(--success-light); color: var(--success); }

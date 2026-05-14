@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Gestione Scuole - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1>Gestione Scuole</h1>
+            <p>Pannello superamministratore &mdash; {{ schools|length }} scuol{{ 'a' if schools|length == 1 else 'e' }} registrat{{ 'a' if schools|length == 1 else 'e' }}</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nome Scuola</th>
+                    <th>Email</th>
+                    <th>Stato</th>
+                    <th>Utenti</th>
+                    <th>Registrata il</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ school.name }}</strong></td>
+                    <td>{{ school.email }}</td>
+                    <td>
+                        <span class="badge {% if school.is_verified %}badge-active{% else %}badge-inactive{% endif %}">
+                            {% if school.is_verified %}Verificata{% else %}Non verificata{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('superadmin.school_users', school_id=school.id) }}" class="btn btn-xs btn-outline">
+                            {{ school.users|length }} utent{{ 'e' if school.users|length == 1 else 'i' }}
+                        </a>
+                    </td>
+                    <td>{{ school.created_at.strftime('%d/%m/%Y') }}</td>
+                    <td class="table-actions">
+                        <form method="POST" action="{{ url_for('superadmin.toggle_school_verification', school_id=school.id) }}" style="display:inline">
+                            <button type="submit" class="btn btn-xs btn-outline">
+                                {% if school.is_verified %}Revoca verifica{% else %}Verifica{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('superadmin.delete_school', school_id=school.id) }}"
+                              style="display:inline"
+                              onsubmit="return confirm('Eliminare definitivamente la scuola \'{{ school.name }}\' e tutti i suoi utenti?')">
+                            <button type="submit" class="btn btn-xs btn-danger">Elimina</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center empty-state">Nessuna scuola registrata.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
