@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Delpy EDU{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -11,7 +14,7 @@
 {% if current_user.is_authenticated %}
 <nav class="navbar">
     <div class="navbar-brand">
-        <a href="{{ url_for('auth.dashboard') }}">Delpy EDU</a>
+        <a href="{{ url_for('auth.dashboard') }}">DELPY<span style="color:var(--text-dim);font-weight:400">_</span>EDU</a>
     </div>
     <ul class="navbar-links">
         {% if not current_user.is_superadmin() %}
@@ -30,13 +33,13 @@
                 {% if current_user.is_superadmin() %}Superadmin{% elif current_user.is_admin() %}Admin{% else %}Studente{% endif %}
             </span>
         </li>
-        <li><a href="{{ url_for('auth.logout') }}" class="btn-logout">Esci</a></li>
+        <li><a href="{{ url_for('auth.logout') }}" class="navbar-links a btn-logout">Esci</a></li>
     </ul>
 </nav>
 {% else %}
 <nav class="navbar">
     <div class="navbar-brand">
-        <a href="{{ url_for('auth.index') }}">Delpy EDU</a>
+        <a href="{{ url_for('auth.index') }}">DELPY<span style="color:var(--text-dim);font-weight:400">_</span>EDU</a>
     </div>
     <ul class="navbar-links">
         <li><a href="{{ url_for('auth.login') }}">Accedi</a></li>
@@ -63,7 +66,7 @@
 </main>
 
 <footer class="footer">
-    <p>&copy; 2025 Delpy EDU &mdash; Piattaforma educativa per le scuole</p>
+    <p>&copy; 2025 DELPY_EDU &mdash; Piattaforma educativa per le scuole</p>
 </footer>
 
 </body>
