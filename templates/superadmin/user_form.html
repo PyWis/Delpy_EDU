@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{% if user %}Modifica Utente{% else %}Nuovo Utente{% endif %} - {{ school.name }} - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <div class="form-header">
+            <h2>{% if user %}Modifica Utente{% else %}Nuovo Utente{% endif %}</h2>
+            <p>Scuola: <strong>{{ school.name }}</strong></p>
+        </div>
+
+        <form method="POST" novalidate>
+            <div class="form-group">
+                <label for="username">Nome e Cognome</label>
+                <input type="text" id="username" name="username" class="form-control"
+                       placeholder="es. Mario Rossi" required
+                       value="{{ user.username if user else request.form.get('username', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-control"
+                       placeholder="mario.rossi@scuola.it" required
+                       value="{{ user.email if user else request.form.get('email', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="role">Ruolo</label>
+                <select id="role" name="role" class="form-control">
+                    <option value="student" {% if (user and user.role == 'student') or (not user and request.form.get('role', 'student') == 'student') %}selected{% endif %}>Studente</option>
+                    <option value="admin"   {% if (user and user.role == 'admin')   or (not user and request.form.get('role') == 'admin') %}selected{% endif %}>Amministratore</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    {% if user %}Nuova Password <small class="form-hint">(lascia vuoto per non cambiare)</small>{% else %}Password{% endif %}
+                </label>
+                <input type="password" id="password" name="password" class="form-control"
+                       placeholder="Minimo 8 caratteri"
+                       {% if not user %}required{% endif %}>
+            </div>
+
+            {% if user %}
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="is_active" value="1"
+                           {% if user.is_active %}checked{% endif %}>
+                    Account attivo
+                </label>
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <a href="{{ url_for('superadmin.school_users', school_id=school.id) }}" class="btn btn-outline">Annulla</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if user %}Salva Modifiche{% else %}Crea Utente{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

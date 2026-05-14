@@ -8,6 +8,7 @@
             <h1>Gestione Scuole</h1>
             <p>Pannello superamministratore &mdash; {{ schools|length }} scuol{{ 'a' if schools|length == 1 else 'e' }} registrat{{ 'a' if schools|length == 1 else 'e' }}</p>
         </div>
+        <a href="{{ url_for('superadmin.create_school') }}" class="btn btn-primary">+ Nuova Scuola</a>
     </div>
 
     <div class="table-responsive">
@@ -41,6 +42,7 @@
                     </td>
                     <td>{{ school.created_at.strftime('%d/%m/%Y') }}</td>
                     <td class="table-actions">
+                        <a href="{{ url_for('superadmin.edit_school', school_id=school.id) }}" class="btn btn-xs btn-outline">Modifica</a>
                         <form method="POST" action="{{ url_for('superadmin.toggle_school_verification', school_id=school.id) }}" style="display:inline">
                             <button type="submit" class="btn btn-xs btn-outline">
                                 {% if school.is_verified %}Revoca verifica{% else %}Verifica{% endif %}

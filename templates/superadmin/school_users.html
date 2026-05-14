@@ -14,6 +14,7 @@
                 </span>
             </p>
         </div>
+        <a href="{{ url_for('superadmin.create_user', school_id=school.id) }}" class="btn btn-primary">+ Nuovo Utente</a>
     </div>
 
     <div class="table-responsive">
@@ -47,6 +48,7 @@
                     </td>
                     <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
                     <td class="table-actions">
+                        <a href="{{ url_for('superadmin.edit_user', school_id=school.id, user_id=user.id) }}" class="btn btn-xs btn-outline">Modifica</a>
                         <form method="POST" action="{{ url_for('superadmin.toggle_user', school_id=school.id, user_id=user.id) }}" style="display:inline">
                             <button type="submit" class="btn btn-xs btn-outline">
                                 {% if user.is_active %}Disabilita{% else %}Abilita{% endif %}
