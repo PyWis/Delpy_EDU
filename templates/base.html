@@ -14,15 +14,19 @@
         <a href="{{ url_for('auth.dashboard') }}">Delpy EDU</a>
     </div>
     <ul class="navbar-links">
+        {% if not current_user.is_superadmin() %}
         <li><a href="{{ url_for('auth.dashboard') }}" class="{% if request.endpoint == 'auth.dashboard' %}active{% endif %}">Dashboard</a></li>
         <li><a href="{{ url_for('quiz.quiz_list') }}" class="{% if request.blueprint == 'quiz' %}active{% endif %}">Quiz</a></li>
         {% if current_user.is_admin() %}
         <li><a href="{{ url_for('admin.user_list') }}" class="{% if request.blueprint == 'admin' %}active{% endif %}">Utenti</a></li>
         {% endif %}
+        {% else %}
+        <li><a href="{{ url_for('superadmin.schools') }}" class="{% if request.blueprint == 'superadmin' %}active{% endif %}">Gestione Scuole</a></li>
+        {% endif %}
         <li class="navbar-user">
             <span>{{ current_user.username }}</span>
-            <span class="badge {% if current_user.is_admin() %}badge-admin{% else %}badge-student{% endif %}">
-                {% if current_user.is_admin() %}Admin{% else %}Studente{% endif %}
+            <span class="badge {% if current_user.is_superadmin() %}badge-superadmin{% elif current_user.is_admin() %}badge-admin{% else %}badge-student{% endif %}">
+                {% if current_user.is_superadmin() %}Superadmin{% elif current_user.is_admin() %}Admin{% else %}Studente{% endif %}
             </span>
         </li>
         <li><a href="{{ url_for('auth.logout') }}" class="btn-logout">Esci</a></li>

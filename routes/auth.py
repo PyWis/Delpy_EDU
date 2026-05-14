@@ -127,7 +127,7 @@ def login():
             flash("Account disabilitato. Contatta l'amministratore della scuola.", "danger")
             return render_template("login.html")
 
-        if not user.school.is_verified:
+        if not user.is_superadmin() and not user.school.is_verified:
             flash("L'account della scuola non è ancora verificato. Controlla la tua email.", "warning")
             return render_template("login.html")
 
@@ -149,6 +149,9 @@ def logout():
 @auth_bp.route("/dashboard")
 @login_required
 def dashboard():
+    if current_user.is_superadmin():
+        return redirect(url_for("superadmin.schools"))
+
     from quiz_loader import get_quiz_list
     from models import QuizResult
     quizzes = get_quiz_list()
