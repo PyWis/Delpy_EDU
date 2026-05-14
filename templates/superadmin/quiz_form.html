@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}{% if quiz %}Modifica Quiz{% else %}Nuovo Quiz{% endif %} - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width:860px">
+    <div class="page-header">
+        <div>
+            <h1>{% if quiz %}Modifica Quiz{% else %}Nuovo Quiz{% endif %}</h1>
+            <p><a href="{{ url_for('superadmin.quiz_list') }}">&larr; Tutti i quiz</a></p>
+        </div>
+    </div>
+
+    <form id="quiz-form" method="POST" novalidate>
+        <!-- Meta -->
+        <div class="form-card" style="margin-bottom:24px">
+            <div class="form-group">
+                <label for="title">Titolo del quiz</label>
+                <input type="text" id="title" name="title" class="form-control"
+                       value="{{ quiz.title if quiz else '' }}" required placeholder="es. Verifica di Storia">
+            </div>
+            <div class="form-group">
+                <label for="description">Descrizione <small class="form-hint">(opzionale)</small></label>
+                <textarea id="description" name="description" class="form-control" rows="2"
+                          placeholder="Breve descrizione del quiz...">{{ quiz.description or '' }}</textarea>
+            </div>
+            <div class="form-group" style="max-width:200px">
+                <label for="time_limit">Tempo massimo (minuti)</label>
+                <input type="number" id="time_limit" name="time_limit" class="form-control"
+                       min="1" max="300" value="{{ quiz.time_limit if quiz else 30 }}" required>
+            </div>
+        </div>
+
+        <!-- Questions -->
+        <h2 style="margin-bottom:16px">Domande</h2>
+        <div id="questions-container"></div>
+
+        <button type="button" id="btn-add-question" class="btn btn-outline" style="margin-bottom:32px">
+            + Aggiungi domanda
+        </button>
+
+        <input type="hidden" id="quiz-data" name="quiz_data" value="">
+
+        <div class="form-actions">
+            <a href="{{ url_for('superadmin.quiz_list') }}" class="btn btn-outline">Annulla</a>
+            <button type="submit" class="btn btn-primary">
+                {% if quiz %}Salva Modifiche{% else %}Crea Quiz{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+.question-block {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+}
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.question-header h3 { font-size: 1rem; color: var(--gray-800); }
+.score-row { display: flex; gap: 16px; }
+.score-row .form-group { flex: 1; }
+.answers-section { margin-top: 12px; }
+.answers-section > label { font-weight: 600; font-size: .875rem; display:block; margin-bottom:8px; }
+.answer-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.answer-row input[type=radio] { flex-shrink: 0; width:16px; height:16px; cursor:pointer; }
+.answer-row .answer-text { flex: 1; }
+.correct-label { font-size:.75rem; color: var(--success); font-weight:600; white-space:nowrap; }
+</style>
+
+<script>
+const existingData = {{ quiz_json | tojson | safe }};
+let qCounter = 0;
+const ansCounters = {};
+
+function addQuestion(data) {
+    qCounter++;
+    const qi = qCounter;
+    ansCounters[qi] = 0;
+
+    const div = document.createElement('div');
+    div.className = 'question-block';
+    div.id = `qblock-${qi}`;
+    div.innerHTML = `
+        <div class="question-header">
+            <h3 class="q-label">Domanda ${document.querySelectorAll('.question-block').length + 1}</h3>
+            <button type="button" onclick="removeQuestion(${qi})" class="btn btn-xs btn-danger">Rimuovi</button>
+        </div>
+        <div class="form-group">
+            <label>Testo della domanda</label>
+            <textarea class="form-control q-text" rows="2" placeholder="Scrivi la domanda..." required></textarea>
+        </div>
+        <div class="score-row">
+            <div class="form-group">
+                <label>Punteggio risposta corretta</label>
+                <select class="form-control q-correct-score">
+                    ${[1,2,3,4,5].map(v=>`<option value="${v}">+${v}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Penalità risposta sbagliata</label>
+                <select class="form-control q-wrong-score">
+                    <option value="0">0 (nessuna penalità)</option>
+                    <option value="-1">-1</option>
+                </select>
+            </div>
+        </div>
+        <div class="answers-section">
+            <label>Risposte &mdash; seleziona quella corretta:</label>
+            <div class="answers-list" id="alist-${qi}"></div>
+            <button type="button" onclick="addAnswer(${qi})" class="btn btn-xs btn-outline" style="margin-top:4px">
+                + Aggiungi risposta
+            </button>
+        </div>
+    `;
+    document.getElementById('questions-container').appendChild(div);
+
+    if (data) {
+        div.querySelector('.q-text').value = data.text || '';
+        div.querySelector('.q-correct-score').value = data.correct_score || 1;
+        div.querySelector('.q-wrong-score').value = data.wrong_score ?? 0;
+        (data.answers || []).forEach(a => addAnswer(qi, a));
+    } else {
+        addAnswer(qi, {text:'', is_correct: true});
+        addAnswer(qi, {text:'', is_correct: false});
+    }
+
+    renumberQuestions();
+}
+
+function addAnswer(qi, data) {
+    const list = document.getElementById(`alist-${qi}`);
+    if (list.querySelectorAll('.answer-row').length >= 4) {
+        alert('Massimo 4 risposte per domanda.');
+        return;
+    }
+    ansCounters[qi] = (ansCounters[qi] || 0) + 1;
+    const ai = ansCounters[qi];
+    const row = document.createElement('div');
+    row.className = 'answer-row';
+    row.id = `arow-${qi}-${ai}`;
+    row.innerHTML = `
+        <input type="radio" name="correct-q${qi}" value="${ai}" class="answer-correct"
+               ${data && data.is_correct ? 'checked' : ''} required>
+        <span class="correct-label" style="display:${data && data.is_correct?'inline':'none'}">✓ Corretta</span>
+        <input type="text" class="form-control answer-text"
+               placeholder="Testo risposta..." value="${data ? (data.text||'') : ''}">
+        <button type="button" onclick="removeAnswer(${qi},${ai})" class="btn btn-xs btn-danger">✕</button>
+    `;
+    row.querySelector('.answer-correct').addEventListener('change', function() {
+        // Update correct label visibility
+        document.querySelectorAll(`#alist-${qi} .correct-label`).forEach(el => el.style.display='none');
+        if (this.checked) this.nextElementSibling.style.display = 'inline';
+    });
+    list.appendChild(row);
+}
+
+function removeAnswer(qi, ai) {
+    const list = document.getElementById(`alist-${qi}`);
+    if (list.querySelectorAll('.answer-row').length <= 2) {
+        alert('Ogni domanda deve avere almeno 2 risposte.');
+        return;
+    }
+    document.getElementById(`arow-${qi}-${ai}`).remove();
+}
+
+function removeQuestion(qi) {
+    if (document.querySelectorAll('.question-block').length <= 1) {
+        alert('Il quiz deve avere almeno una domanda.');
+        return;
+    }
+    document.getElementById(`qblock-${qi}`).remove();
+    renumberQuestions();
+}
+
+function renumberQuestions() {
+    document.querySelectorAll('.question-block .q-label').forEach((el, i) => {
+        el.textContent = `Domanda ${i + 1}`;
+    });
+}
+
+document.getElementById('btn-add-question').addEventListener('click', () => addQuestion(null));
+
+document.getElementById('quiz-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const questions = [];
+    let valid = true;
+
+    document.querySelectorAll('.question-block').forEach(block => {
+        const text = block.querySelector('.q-text').value.trim();
+        if (!text) { alert('Compila il testo di tutte le domande.'); valid = false; return; }
+
+        const correct_score = parseInt(block.querySelector('.q-correct-score').value);
+        const wrong_score = parseInt(block.querySelector('.q-wrong-score').value);
+        const answers = [];
+        let hasCorrect = false;
+
+        block.querySelectorAll('.answer-row').forEach(row => {
+            const txt = row.querySelector('.answer-text').value.trim();
+            if (!txt) { alert('Compila il testo di tutte le risposte.'); valid = false; return; }
+            const isCorrect = row.querySelector('.answer-correct').checked;
+            if (isCorrect) hasCorrect = true;
+            answers.push({text: txt, is_correct: isCorrect});
+        });
+
+        if (!hasCorrect) { alert('Seleziona la risposta corretta per ogni domanda.'); valid = false; return; }
+        questions.push({text, correct_score, wrong_score, answers});
+    });
+
+    if (!valid) return;
+    if (questions.length === 0) { alert('Aggiungi almeno una domanda.'); return; }
+
+    document.getElementById('quiz-data').value = JSON.stringify({questions});
+    this.submit();
+});
+
+// Initialize
+if (existingData) {
+    JSON.parse(existingData).questions.forEach(q => addQuestion(q));
+} else {
+    addQuestion(null);
+}
+</script>
+{% endblock %}

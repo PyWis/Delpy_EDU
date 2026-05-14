@@ -1,54 +1,70 @@
 {% extends "base.html" %}
-{% block title %}Risultato: {{ title }} - Delpy EDU{% endblock %}
+{% block title %}Risultato: {{ attempt.quiz.title }} - Delpy EDU{% endblock %}
 
 {% block content %}
-<div class="page-container">
-    <div class="result-hero
-        {% if percentage >= 70 %}result-hero-good
-        {% elif percentage >= 50 %}result-hero-medium
-        {% else %}result-hero-bad{% endif %}">
-        <h1>{{ title }}</h1>
-        <div class="result-score-big">{{ score }}/{{ total }}</div>
-        <div class="result-percentage">{{ percentage }}%</div>
-        <p class="result-message">
-            {% if percentage >= 90 %}Ottimo lavoro! Risultato eccellente.
-            {% elif percentage >= 70 %}Bravo! Buon risultato.
-            {% elif percentage >= 50 %}Sufficiente. Puoi migliorare!
-            {% else %}Insufficiente. Riprova dopo aver studiato.{% endif %}
-        </p>
-    </div>
+<div class="page-container" style="max-width:700px">
 
-    <div class="results-review">
-        <h2>Revisione delle Risposte</h2>
-        {% for r in results %}
-        <div class="review-card {% if r.is_correct %}review-correct{% else %}review-wrong{% endif %}">
-            <div class="review-header">
-                <span class="review-num">{{ loop.index }}.</span>
-                <p class="review-question">{{ r.text }}</p>
-                <span class="review-badge">
-                    {% if r.is_correct %}&#10003; Corretta{% else %}&#10007; Errata{% endif %}
-                </span>
-            </div>
-            <ul class="review-options">
-                {% for option in r.options %}
-                <li class="review-option
-                    {% if option.key == r.correct %}review-option-correct
-                    {% elif option.key == r.user_answer and not r.is_correct %}review-option-wrong
-                    {% endif %}">
-                    <strong>{{ option.key }}.</strong> {{ option.text }}
-                    {% if option.key == r.correct %}<span class="answer-tag">&#10003; Risposta corretta</span>{% endif %}
-                    {% if option.key == r.user_answer and not r.is_correct %}<span class="answer-tag answer-tag-wrong">La tua risposta</span>{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
+    <!-- Score card -->
+    <div class="result-score-card
+        {% if attempt.final_score > 10 %}score-card-perfect
+        {% elif attempt.final_score >= 7 %}score-card-good
+        {% elif attempt.final_score >= 5 %}score-card-medium
+        {% else %}score-card-low{% endif %}">
+        <div class="result-score-value">{{ attempt.display_score }}</div>
+        <div class="result-score-label">
+            {% if attempt.final_score > 10 %}Eccellente! Tutte corrette in tempo record.
+            {% elif attempt.final_score >= 7 %}Ottimo risultato!
+            {% elif attempt.final_score >= 5 %}Sufficiente.
+            {% else %}Da rivedere.{% endif %}
         </div>
-        {% endfor %}
+        <div class="result-meta">
+            <span>⏱ {{ attempt.display_time }}</span>
+            <span>✅ {{ attempt.user_answers|selectattr('is_correct')|list|length }}/{{ attempt.quiz.questions|length }} corrette</span>
+            <span>⏭ {{ attempt.user_answers|selectattr('answer_id', 'none')|list|length }} saltate</span>
+        </div>
     </div>
 
-    <div class="result-actions">
-        <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-outline">Torna ai Quiz</a>
-        <a href="{{ url_for('quiz.take_quiz', filename=filename) }}" class="btn btn-primary">Riprova</a>
-        <a href="{{ url_for('quiz.history') }}" class="btn btn-outline">Cronologia</a>
+    <!-- Breakdown -->
+    <h2 style="margin:28px 0 16px">Dettaglio risposte</h2>
+    {% for item in breakdown %}
+    <div class="breakdown-card breakdown-{{ item.status }}">
+        <div class="breakdown-header">
+            <span class="breakdown-num">{{ loop.index }}</span>
+            <span class="breakdown-status-icon">
+                {% if item.status == 'correct' %}✅
+                {% elif item.status == 'wrong' %}❌
+                {% else %}⏭{% endif %}
+            </span>
+            <span class="breakdown-points">
+                {% if item.points > 0 %}+{{ item.points|int }}
+                {% elif item.points < 0 %}{{ item.points|int }}
+                {% else %}0{% endif %} pt
+            </span>
+        </div>
+        <p class="breakdown-question">{{ item.question.text }}</p>
+        {% if item.selected %}
+        <p class="breakdown-your-answer">
+            La tua risposta: <strong>{{ item.selected.text }}</strong>
+            {% if item.status == 'correct' %}<span class="answer-tag correct">Corretta</span>
+            {% else %}<span class="answer-tag wrong">Sbagliata</span>{% endif %}
+        </p>
+        {% else %}
+        <p class="breakdown-your-answer"><em>Non risposto</em></p>
+        {% endif %}
+        {% if item.status != 'correct' and item.correct_answer %}
+        <p class="breakdown-correct">
+            Risposta corretta: <strong>{{ item.correct_answer.text }}</strong>
+        </p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="form-actions" style="margin-top:32px">
+        <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-outline">Tutti i quiz</a>
+        <a href="{{ url_for('quiz.leaderboard', quiz_id=attempt.quiz_id) }}" class="btn btn-outline">Classifica</a>
+        <form method="POST" action="{{ url_for('quiz.start_quiz', quiz_id=attempt.quiz_id) }}" style="display:inline">
+            <button type="submit" class="btn btn-primary">Riprova</button>
+        </form>
     </div>
 </div>
 {% endblock %}

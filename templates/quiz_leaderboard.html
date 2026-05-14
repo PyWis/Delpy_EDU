@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Classifica: {{ quiz.title }} - Delpy EDU{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header">
+        <div>
+            <h1>Classifica — {{ quiz.title }}</h1>
+            <p><a href="{{ url_for('quiz.quiz_detail', quiz_id=quiz.id) }}">&larr; Torna al quiz</a></p>
+        </div>
+    </div>
+
+    <!-- Tab nav -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="showTab('tab-global', this)">🌍 Generale</button>
+        {% if current_user.school_id %}
+        <button class="tab-btn" onclick="showTab('tab-school', this)">🏫 La mia scuola</button>
+        {% endif %}
+        <button class="tab-btn" onclick="showTab('tab-schools', this)">🏆 Classifica scuole</button>
+    </div>
+
+    <!-- Global ranking -->
+    <div id="tab-global" class="tab-panel">
+        <h2 class="section-title">Classifica generale</h2>
+        {% if global_ranking %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr>
+                    <th>Pos.</th><th>Utente</th><th>Scuola</th><th>Voto</th><th>Tempo</th>
+                </tr></thead>
+                <tbody>
+                    {% for attempt in global_ranking %}
+                    <tr class="{% if attempt.user_id == current_user.id %}row-highlight{% endif %}">
+                        <td>
+                            {% if loop.index == 1 %}🥇
+                            {% elif loop.index == 2 %}🥈
+                            {% elif loop.index == 3 %}🥉
+                            {% else %}{{ loop.index }}{% endif %}
+                        </td>
+                        <td>{{ attempt.user.username }}{% if attempt.user_id == current_user.id %} <em>(tu)</em>{% endif %}</td>
+                        <td>{{ attempt.user.school.name if attempt.user.school else '—' }}</td>
+                        <td><span class="score-pill {% if attempt.final_score > 10 %}score-perfect{% elif attempt.final_score >= 7 %}score-good{% elif attempt.final_score >= 5 %}score-medium{% else %}score-low{% endif %}">{{ attempt.display_score }}</span></td>
+                        <td>{{ attempt.display_time }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-state">Nessun risultato ancora.</p>
+        {% endif %}
+    </div>
+
+    <!-- My school ranking -->
+    {% if current_user.school_id %}
+    <div id="tab-school" class="tab-panel" style="display:none">
+        <h2 class="section-title">{{ current_user.school.name }}</h2>
+        {% if my_school_ranking %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr>
+                    <th>Pos.</th><th>Utente</th><th>Voto</th><th>Tempo</th>
+                </tr></thead>
+                <tbody>
+                    {% for attempt in my_school_ranking %}
+                    <tr class="{% if attempt.user_id == current_user.id %}row-highlight{% endif %}">
+                        <td>
+                            {% if loop.index == 1 %}🥇
+                            {% elif loop.index == 2 %}🥈
+                            {% elif loop.index == 3 %}🥉
+                            {% else %}{{ loop.index }}{% endif %}
+                        </td>
+                        <td>{{ attempt.user.username }}{% if attempt.user_id == current_user.id %} <em>(tu)</em>{% endif %}</td>
+                        <td><span class="score-pill {% if attempt.final_score > 10 %}score-perfect{% elif attempt.final_score >= 7 %}score-good{% elif attempt.final_score >= 5 %}score-medium{% else %}score-low{% endif %}">{{ attempt.display_score }}</span></td>
+                        <td>{{ attempt.display_time }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-state">Nessun risultato dalla tua scuola.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- School leaderboard -->
+    <div id="tab-schools" class="tab-panel" style="display:none">
+        <h2 class="section-title">Classifica scuole
+            <small style="font-size:.8rem; font-weight:400; color:var(--gray-600)">
+                media dei 10 punteggi più alti
+            </small>
+        </h2>
+        {% if school_leaderboard %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr>
+                    <th>Pos.</th><th>Scuola</th><th>Punteggio</th><th>Partecipanti</th>
+                </tr></thead>
+                <tbody>
+                    {% for entry in school_leaderboard %}
+                    <tr class="{% if current_user.school_id == entry.school.id %}row-highlight{% endif %}">
+                        <td>
+                            {% if loop.index == 1 %}🥇
+                            {% elif loop.index == 2 %}🥈
+                            {% elif loop.index == 3 %}🥉
+                            {% else %}{{ loop.index }}{% endif %}
+                        </td>
+                        <td>{{ entry.school.name }}</td>
+                        <td><span class="score-pill {% if entry.score > 10 %}score-perfect{% elif entry.score >= 7 %}score-good{% elif entry.score >= 5 %}score-medium{% else %}score-low{% endif %}">{{ entry.display }}</span></td>
+                        <td>{{ entry.participants }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="empty-state">Nessuna scuola ha ancora completato questo quiz.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function showTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).style.display = 'block';
+    btn.classList.add('active');
+}
+</script>
+{% endblock %}

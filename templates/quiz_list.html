@@ -1,38 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Quiz Disponibili - Delpy EDU{% endblock %}
+{% block title %}Quiz - Delpy EDU{% endblock %}
 
 {% block content %}
 <div class="page-container">
     <div class="page-header">
         <div>
             <h1>Quiz Disponibili</h1>
-            <p>Seleziona un quiz per iniziare.</p>
+            <p>{{ quizzes|length }} quiz disponibil{{ 'e' if quizzes|length == 1 else 'i' }}</p>
         </div>
         <a href="{{ url_for('quiz.history') }}" class="btn btn-outline">Cronologia</a>
     </div>
 
     {% if quizzes %}
-    <div class="quiz-grid">
+    <div class="quiz-cards">
         {% for quiz in quizzes %}
         <div class="quiz-card">
-            <div class="quiz-card-icon">&#128203;</div>
-            <h3 class="quiz-card-title">{{ quiz.title }}</h3>
-            <p class="quiz-card-file"><code>{{ quiz.filename }}</code></p>
-            <a href="{{ url_for('quiz.take_quiz', filename=quiz.filename) }}" class="btn btn-primary btn-block">
-                Inizia Quiz
-            </a>
+            <div class="quiz-card-body">
+                <h2 class="quiz-card-title">{{ quiz.title }}</h2>
+                {% if quiz.description %}
+                <p class="quiz-card-desc">{{ quiz.description }}</p>
+                {% endif %}
+                <div class="quiz-card-meta">
+                    <span>📝 {{ quiz.questions|length }} domand{{ 'a' if quiz.questions|length == 1 else 'e' }}</span>
+                    <span>⏱ {{ quiz.time_limit }} minut{{ 'o' if quiz.time_limit == 1 else 'i' }}</span>
+                </div>
+            </div>
+            <div class="quiz-card-footer">
+                <a href="{{ url_for('quiz.quiz_detail', quiz_id=quiz.id) }}" class="btn btn-primary">Vai al quiz</a>
+                <a href="{{ url_for('quiz.leaderboard', quiz_id=quiz.id) }}" class="btn btn-outline btn-sm">Classifica</a>
+            </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty-card">
-        <div class="empty-icon">&#128203;</div>
-        <h3>Nessun quiz disponibile</h3>
-        <p>
-            Aggiungi file <code>.csv</code> nella cartella <code>quiz/</code> per renderli disponibili agli utenti.<br>
-            Formato atteso: colonne <code>domanda, opzione_A, opzione_B, opzione_C, opzione_D, risposta_corretta</code>
-        </p>
-    </div>
+    <p class="empty-state">Nessun quiz disponibile al momento.</p>
     {% endif %}
 </div>
 {% endblock %}

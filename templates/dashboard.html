@@ -18,7 +18,7 @@
             <div class="stat-label">Quiz Disponibili</div>
         </div>
         <div class="stat-card">
-            <div class="stat-number">{{ recent_results|length }}</div>
+            <div class="stat-number">{{ recent_attempts|length }}</div>
             <div class="stat-label">Quiz Completati Recenti</div>
         </div>
         {% if current_user.is_admin() %}
@@ -37,15 +37,18 @@
             </div>
             {% if quizzes %}
             <ul class="quiz-list">
-                {% for quiz in quizzes[:5] %}
+                {% for quiz in quizzes %}
                 <li class="quiz-item">
-                    <span class="quiz-title">{{ quiz.title }}</span>
-                    <a href="{{ url_for('quiz.take_quiz', filename=quiz.filename) }}" class="btn btn-sm btn-primary">Inizia</a>
+                    <div>
+                        <span class="quiz-title">{{ quiz.title }}</span>
+                        <small style="color:var(--gray-600)"> — {{ quiz.questions|length }} domande, {{ quiz.time_limit }}'</small>
+                    </div>
+                    <a href="{{ url_for('quiz.quiz_detail', quiz_id=quiz.id) }}" class="btn btn-sm btn-primary">Inizia</a>
                 </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="empty-state">Nessun quiz disponibile. Aggiungi file CSV nella cartella <code>quiz/</code>.</p>
+            <p class="empty-state">Nessun quiz disponibile. L'amministratore deve crearne uno.</p>
             {% endif %}
         </section>
 
@@ -54,20 +57,22 @@
                 <h2>Risultati Recenti</h2>
                 <a href="{{ url_for('quiz.history') }}" class="btn btn-sm btn-outline">Cronologia</a>
             </div>
-            {% if recent_results %}
+            {% if recent_attempts %}
             <ul class="results-list">
-                {% for result in recent_results %}
+                {% for attempt in recent_attempts %}
                 <li class="result-item">
                     <div class="result-info">
-                        <span class="result-title">{{ result.quiz_title }}</span>
-                        <span class="result-date">{{ result.completed_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                        <span class="result-title">{{ attempt.quiz.title }}</span>
+                        <span class="result-date">{{ attempt.completed_at.strftime('%d/%m/%Y %H:%M') }}</span>
                     </div>
-                    <div class="result-score
-                        {% if result.percentage >= 70 %}score-good
-                        {% elif result.percentage >= 50 %}score-medium
-                        {% else %}score-bad{% endif %}">
-                        {{ result.score }}/{{ result.total_questions }}
-                        <small>({{ result.percentage }}%)</small>
+                    <div class="result-score">
+                        <span class="score-pill
+                            {% if attempt.final_score > 10 %}score-perfect
+                            {% elif attempt.final_score >= 7 %}score-good
+                            {% elif attempt.final_score >= 5 %}score-medium
+                            {% else %}score-low{% endif %}">
+                            {{ attempt.display_score }}
+                        </span>
                     </div>
                 </li>
                 {% endfor %}
@@ -88,11 +93,7 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Ruolo</th>
-                        <th>Stato</th>
-                        <th>Azioni</th>
+                        <th>Nome</th><th>Email</th><th>Ruolo</th><th>Stato</th><th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody>

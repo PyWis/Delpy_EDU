@@ -21,7 +21,8 @@
         <li><a href="{{ url_for('admin.user_list') }}" class="{% if request.blueprint == 'admin' %}active{% endif %}">Utenti</a></li>
         {% endif %}
         {% else %}
-        <li><a href="{{ url_for('superadmin.schools') }}" class="{% if request.blueprint == 'superadmin' %}active{% endif %}">Gestione Scuole</a></li>
+        <li><a href="{{ url_for('superadmin.schools') }}" class="{% if request.endpoint and 'school' in request.endpoint %}active{% endif %}">Scuole</a></li>
+        <li><a href="{{ url_for('superadmin.quiz_list') }}" class="{% if request.endpoint and 'quiz' in request.endpoint %}active{% endif %}">Quiz</a></li>
         {% endif %}
         <li class="navbar-user">
             <span>{{ current_user.username }}</span>

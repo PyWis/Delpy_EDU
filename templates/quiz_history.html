@@ -6,57 +6,53 @@
     <div class="page-header">
         <div>
             <h1>Cronologia Quiz</h1>
-            <p>Tutti i quiz completati da {{ current_user.username }}</p>
+            <p>{{ attempts|length }} tentativ{{ 'o' if attempts|length == 1 else 'i' }} completati</p>
         </div>
-        <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-primary">Nuovo Quiz</a>
+        <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-outline">Tutti i quiz</a>
     </div>
 
-    {% if results %}
     <div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
                     <th>#</th>
                     <th>Quiz</th>
-                    <th>Punteggio</th>
-                    <th>Percentuale</th>
-                    <th>Data</th>
+                    <th>Voto</th>
+                    <th>Tempo</th>
+                    <th>Corrette</th>
+                    <th>Completato il</th>
+                    <th>Azioni</th>
                 </tr>
             </thead>
             <tbody>
-                {% for result in results %}
+                {% for attempt in attempts %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ result.quiz_title }}</td>
-                    <td>{{ result.score }}/{{ result.total_questions }}</td>
+                    <td><strong>{{ attempt.quiz.title }}</strong></td>
                     <td>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar
-                                {% if result.percentage >= 70 %}progress-good
-                                {% elif result.percentage >= 50 %}progress-medium
-                                {% else %}progress-bad{% endif %}"
-                                style="width: {{ result.percentage }}%">
-                            </div>
-                        </div>
-                        <span class="{% if result.percentage >= 70 %}text-good
-                                     {% elif result.percentage >= 50 %}text-medium
-                                     {% else %}text-bad{% endif %}">
-                            {{ result.percentage }}%
+                        <span class="score-pill
+                            {% if attempt.final_score > 10 %}score-perfect
+                            {% elif attempt.final_score >= 7 %}score-good
+                            {% elif attempt.final_score >= 5 %}score-medium
+                            {% else %}score-low{% endif %}">
+                            {{ attempt.display_score }}
                         </span>
                     </td>
-                    <td>{{ result.completed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ attempt.display_time }}</td>
+                    <td>{{ attempt.user_answers|selectattr('is_correct')|list|length }}/{{ attempt.quiz.questions|length }}</td>
+                    <td>{{ attempt.completed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td class="table-actions">
+                        <a href="{{ url_for('quiz.quiz_result', attempt_id=attempt.id) }}" class="btn btn-xs btn-outline">Dettaglio</a>
+                        <a href="{{ url_for('quiz.leaderboard', quiz_id=attempt.quiz_id) }}" class="btn btn-xs btn-outline">Classifica</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center empty-state">Nessun quiz completato. <a href="{{ url_for('quiz.quiz_list') }}">Inizia il primo!</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div class="empty-card">
-        <div class="empty-icon">&#128203;</div>
-        <h3>Nessun quiz completato</h3>
-        <p>Inizia il tuo primo quiz per vedere i risultati qui.</p>
-        <a href="{{ url_for('quiz.quiz_list') }}" class="btn btn-primary">Vai ai Quiz</a>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
