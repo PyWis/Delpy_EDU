@@ -29,11 +29,21 @@ def _format_score(value):
     return f"{value:.1f}".replace(".", ",")
 
 
-def _school_avg(scores):
+def _format_school_score(value):
+    """Format school score (sum of top-10, max 100). >100 → '100+'."""
+    if value is None:
+        return "—"
+    if value > 100:
+        return "100+"
+    return f"{value:.1f}".replace(".", ",")
+
+
+def _school_score(scores):
+    """Sum of the top-10 individual scores (each up to 10.5)."""
     if not scores:
         return None
     top10 = sorted(scores, reverse=True)[:10]
-    return sum(top10) / len(top10)
+    return sum(top10)
 
 
 # ── quiz list ─────────────────────────────────────────────────────────────────
@@ -261,7 +271,7 @@ def leaderboard(quiz_id):
         if current_user.school_id and a.user.school_id == current_user.school_id
     ]
 
-    # School leaderboard: avg of top-10 per school
+    # School leaderboard: sum of top-10 per school (max 100, "100+" above)
     school_scores = {}
     for a in best_per_user.values():
         sid = a.user.school_id
@@ -273,11 +283,11 @@ def leaderboard(quiz_id):
         school = db.session.get(School, sid)
         if not school:
             continue
-        avg = _school_avg(scores)
+        total = _school_score(scores)
         school_leaderboard.append({
             "school": school,
-            "score": avg,
-            "display": _format_score(avg),
+            "score": total,
+            "display": _format_school_score(total),
             "participants": len(scores),
         })
     school_leaderboard.sort(key=lambda x: (-(x["score"] or 0), x["school"].name))
