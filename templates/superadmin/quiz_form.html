@@ -31,7 +31,7 @@
         </div>
 
         <!-- Questions -->
-        <h2 style="margin-bottom:16px">Domande</h2>
+        <h2 style="margin-bottom:16px; font-family:var(--font-display); color:var(--text-bright); font-size:1.1rem; letter-spacing:.5px; text-transform:uppercase;">Domande</h2>
         <div id="questions-container"></div>
 
         <button type="button" id="btn-add-question" class="btn btn-outline" style="margin-bottom:32px">
@@ -51,33 +51,70 @@
 
 <style>
 .question-block {
-    background: #fff;
-    border: 1px solid var(--gray-200);
+    background: var(--bg-3);
+    border: 1px solid var(--border-bright);
     border-radius: var(--radius-lg);
     padding: 20px 24px;
     margin-bottom: 16px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-card);
+    position: relative;
+}
+.question-block::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 .question-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
-.question-header h3 { font-size: 1rem; color: var(--gray-800); }
+.question-header h3 {
+    font-size: 1rem;
+    font-family: var(--font-display);
+    color: var(--cyan);
+    letter-spacing: .5px;
+}
 .score-row { display: flex; gap: 16px; }
 .score-row .form-group { flex: 1; }
-.answers-section { margin-top: 12px; }
-.answers-section > label { font-weight: 600; font-size: .875rem; display:block; margin-bottom:8px; }
+.answers-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+.answers-section > label {
+    font-weight: 600;
+    font-size: .8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    display: block;
+    margin-bottom: 10px;
+}
 .answer-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 8px;
+    background: var(--bg-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    transition: border-color .2s;
 }
-.answer-row input[type=radio] { flex-shrink: 0; width:16px; height:16px; cursor:pointer; }
+.answer-row:has(.answer-correct:checked) {
+    border-color: var(--green-dim);
+    background: rgba(0, 255, 136, 0.05);
+}
+.answer-row input[type=radio] {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--green);
+}
 .answer-row .answer-text { flex: 1; }
-.correct-label { font-size:.75rem; color: var(--success); font-weight:600; white-space:nowrap; }
+.correct-label { font-size: .75rem; color: var(--green); font-weight: 600; white-space: nowrap; }
 </style>
 
 <script>
