@@ -284,11 +284,16 @@ def leaderboard(quiz_id):
         if not school:
             continue
         total = _school_score(scores)
+        n = len(scores)
+        if total is None or total <= 30 or n < 5:
+            display_score = 20.0
+        else:
+            display_score = total
         school_leaderboard.append({
             "school": school,
-            "score": total,
-            "display": _format_school_score(total),
-            "participants": len(scores),
+            "score": display_score,
+            "display": _format_school_score(display_score),
+            "participants": n,
         })
     school_leaderboard.sort(key=lambda x: (-(x["score"] or 0), x["school"].name))
 
